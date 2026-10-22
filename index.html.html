@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kutsuto - Anime Scene Archive & DaVinci Resolve Assets</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Noto Sans Thai & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans Thai"', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        },
+                        neutral: {
+                            25: '#fcfcfc',
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Noto Sans Thai', 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .glass-nav {
+            background: rgba(248, 250, 252, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body x-data="appData()" class="min-h-screen flex flex-col antialiased">
+
+    <!-- Top Navigation Bar -->
+    <nav class="sticky top-0 z-40 glass-nav transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3 cursor-pointer" @click="currentView = 'home'; selectedAnime = null">
+                    <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                        K
+                    </div>
+                    <div>
+                        <span class="font-bold text-slate-900 text-lg tracking-tight">KUTSUTO</span>
+                        <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full ml-2">Clean Archive</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
+                    <button @click="currentView = 'home'; selectedAnime = null" 
+                            :class="currentView === 'home' && !selectedAnime ? 'bg-white shadow-sm text-slate-900 font-semibold' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-4 py-1.5 text-sm rounded-lg transition-all flex items-center gap-2">
+                        <i data-lucide="film" class="w-4 h-4"></i>
+                        <span>คลังอนิเมะ</span>
+                    </button>
+                    <button @click="currentView = 'presets'; selectedAnime = null" 
+                            :class="currentView === 'presets' ? 'bg-white shadow-sm text-slate-900 font-semibold' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-4 py-1.5 text-sm rounded-lg transition-all flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4"></i>
+                        <span>DaVinci Presets & LUTs</span>
+                    </button>
+                    <button @click="currentView = 'about'" 
+                            :class="currentView === 'about' ? 'bg-white shadow-sm text-slate-900 font-semibold' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-4 py-1.5 text-sm rounded-lg transition-all flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                        <span>เกี่ยวกับระบบ</span>
+                    </button>
+                </div>
+
+                <!-- Search Input Header -->
+                <div class="relative max-w-xs w-full hidden sm:block">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" 
+                           x-model="searchQuery" 
+                           placeholder="ค้นหาอนิเมะ, ฉาก, แท็ก หรือ Preset..."
+                           class="w-full pl-9 pr-4 py-1.5 bg-slate-100/90 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:bg-white transition-all">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- VIEW 1: HOME PAGE / ANIME DIRECTORY -->
+        <template x-if="currentView === 'home' && !selectedAnime">
+            <div class="space-y-8">
+                <!-- Hero Section -->
+                <div class="text-center max-w-3xl mx-auto py-6">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 mb-4">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        ศูนย์รวมฉากอนิเมะคุณภาพสูง & DaVinci Resolve Assets
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
+                        รวมทุกฉากตัดอนิเมะ ค้นหาง่าย พร้อมใช้สำหรับ Video Editor
+                    </h1>
+                    <p class="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">
+                        รวบรวมฉากอนิเมะแบบละเอียดยิบตามตอนและช่วงเวลา พร้อมไฟล์โปรเจกต์ DaVinci Resolve (.drp), Fusion Macro และ Color LUT สำหรับนักตัดต่อวิดีโอโดยเฉพาะ
+                    </p>
+
+                    <!-- Mobile Search Field -->
+                    <div class="mt-6 sm:hidden relative">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" 
+                               x-model="searchQuery" 
+                               placeholder="ค้นหาอนิเมะหรือฉาก..."
+                               class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                    </div>
+                </div>
+
+                <!-- Genre/Category Quick Filters -->
+                <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                    <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                        <button @click="selectedCategory = 'All'" 
+                                :class="selectedCategory === 'All' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all">
+                            ทั้งหมด
+                        </button>
+                        <template x-for="cat in categories" :key="cat">
+                            <button @click="selectedCategory = cat" 
+                                    :class="selectedCategory === cat ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                    class="px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all"
+                                    x-text="cat">
+                            </button>
+                        </template>
+                    </div>
+                    <span class="text-xs text-slate-400 hidden sm:inline-block" x-text="filteredAnimeList.length + ' รายการ'"></span>
+                </div>
+
+                <!-- Anime Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <template x-for="anime in filteredAnimeList" :key="anime.id">
+                        <div @click="openAnimeDetail(anime)" 
+                             class="glass-card rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer border border-slate-200/80 flex flex-col">
+                            <!-- Thumbnail Cover -->
+                            <div class="relative aspect-video bg-slate-200 overflow-hidden">
+                                <img :src="anime.coverImage" :alt="anime.title" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent"></div>
+                                <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                                    <span x-text="anime.year"></span>
+                                </div>
+                                <div class="absolute bottom-3 left-3 right-3 flex justify-between items-end text-white">
+                                    <div class="text-xs font-medium flex items-center gap-1.5">
+                                        <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                        <span x-text="anime.episodesCount + ' ตอน'"></span>
+                                        <span class="text-slate-300">•</span>
+                                        <span x-text="anime.scenes.length + ' ฉากตัด'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Card Body -->
+                            <div class="p-4 flex-grow flex flex-col justify-between">
+                                <div>
+                                    <h3 class="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-1" x-text="anime.title"></h3>
+                                    <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed" x-text="anime.description"></p>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <div class="flex gap-1 flex-wrap">
+                                        <template x-for="tag in anime.tags.slice(0, 2)" :key="tag">
+                                            <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px]" x-text="tag"></span>
+                                        </template>
+                                    </div>
+                                    <span class="text-emerald-600 font-medium flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                                        ดูฉากทั้งหมด
+                                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- VIEW 2: DEDICATED ANIME SCENE COMPENDIUM (ฉากทุกฉากในเรื่องเดียว) -->
+        <template x-if="selectedAnime">
+            <div class="space-y-6">
+                <!-- Back Navigation & Breadcrumb -->
+                <div class="flex items-center justify-between">
+                    <button @click="selectedAnime = null" class="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm transition-all">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>ย้อนกลับไปคลังอนิเมะ</span>
+                    </button>
+                    <div class="text-xs text-slate-500">
+                        <span class="text-slate-400">อนิเมะ</span> / <span class="font-medium text-slate-800" x-text="selectedAnime.title"></span>
+                    </div>
+                </div>
+
+                <!-- Anime Header Banner -->
+                <div class="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden border border-slate-200/80">
+                    <div class="flex flex-col md:flex-row gap-6 items-start">
+                        <img :src="selectedAnime.coverImage" :alt="selectedAnime.title" class="w-full md:w-56 h-40 md:h-64 object-cover rounded-xl shadow-md border border-slate-200">
+                        <div class="flex-grow space-y-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-md" x-text="selectedAnime.year"></span>
+                                <span class="bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-md" x-text="selectedAnime.studio"></span>
+                                <span class="bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-md" x-text="selectedAnime.episodesCount + ' ตอนเต็ม'"></span>
+                            </div>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900" x-text="selectedAnime.title"></h1>
+                            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl" x-text="selectedAnime.description"></p>
+                            
+                            <!-- Tags & Stats -->
+                            <div class="pt-2 flex flex-wrap gap-2">
+                                <template x-for="tag in selectedAnime.tags" :key="tag">
+                                    <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200/60" x-text="'#' + tag"></span>
+                                </template>
+                            </div>
+
+                            <div class="pt-4 flex items-center gap-6 text-xs text-slate-500 border-t border-slate-200/60">
+                                <div>
+                                    <span class="block text-slate-400">จำนวนฉากที่จัดเก็บ</span>
+                                    <span class="text-base font-bold text-slate-800" x-text="selectedAnime.scenes.length + ' ฉาก'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400">รองรับ DaVinci Resolve</span>
+                                    <span class="text-base font-bold text-emerald-600">.DRP / LUT / Node Data</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Episode & Arc Filter Controls -->
+                <div class="glass-card p-4 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <!-- Episode Selector Buttons -->
+                    <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">เลือกตอน:</span>
+                        <button @click="selectedEpisodeFilter = 'All'"
+                                :class="selectedEpisodeFilter === 'All' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all whitespace-nowrap">
+                            รวมทุกตอน (Timeline)
+                        </button>
+                        <template x-for="ep in getEpisodesList(selectedAnime)" :key="ep">
+                            <button @click="selectedEpisodeFilter = ep"
+                                    :class="selectedEpisodeFilter === ep ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                    class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all whitespace-nowrap"
+                                    x-text="'ตอนที่ ' + ep">
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Search within anime -->
+                    <div class="relative min-w-[200px]">
+                        <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" 
+                               x-model="sceneSearchQuery" 
+                               placeholder="ค้นหาฉากในเรื่องนี้..." 
+                               class="w-full pl-8 pr-3 py-1.5 bg-slate-100/80 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:bg-white">
+                    </div>
+                </div>
+
+                <!-- Scene Timeline Gallery Grid -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="clapperboard" class="w-4 h-4 text-emerald-600"></i>
+                            รายการฉากตัดตามไทม์ไลน์ (Scene Cut Compendium)
+                        </h2>
+                        <span class="text-xs text-slate-500" x-text="'แสดง ' + filteredAnimeScenes.length + ' ฉาก'"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <template x-for="scene in filteredAnimeScenes" :key="scene.id">
+                            <div class="glass-card rounded-xl overflow-hidden hover:shadow-md transition-all border border-slate-200/80 flex flex-col group">
+                                <!-- Video Preview / Thumbnail -->
+                                <div class="relative aspect-video bg-slate-900 overflow-hidden cursor-pointer" @click="openVideoModal(scene)">
+                                    <img :src="scene.thumbnail" :alt="scene.title" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                    <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                        <div class="w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                            <i data-lucide="play" class="w-5 h-5 fill-slate-900 translate-x-0.5"></i>
+                                        </div>
+                                    </div>
+                                    <!-- Timestamp Badge -->
+                                    <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-[11px] font-mono px-2 py-0.5 rounded">
+                                        <span x-text="'EP.' + scene.episode"></span> • <span x-text="scene.timestamp"></span>
+                                    </div>
+                                    <div class="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                                        <span x-text="scene.fps + ' FPS'"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Scene Metadata -->
+                                <div class="p-4 flex-grow flex flex-col justify-between space-y-3">
+                                    <div>
+                                        <div class="flex items-center justify-between gap-2 mb-1">
+                                            <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded" x-text="scene.category"></span>
+                                            <span class="text-[11px] text-slate-400 font-mono" x-text="'Cut ID: #' + scene.id"></span>
+                                        </div>
+                                        <h3 class="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors line-clamp-1" x-text="scene.title"></h3>
+                                        <p class="text-xs text-slate-500 mt-1 line-clamp-2" x-text="scene.description"></p>
+                                    </div>
+
+                                    <!-- DaVinci Resolve Specs Info -->
+                                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 text-[11px] space-y-1">
+                                        <div class="flex justify-between text-slate-600">
+                                            <span class="text-slate-400">Color Profile:</span>
+                                            <span class="font-medium" x-text="scene.colorSpace"></span>
+                                        </div>
+                                        <div class="flex justify-between text-slate-600">
+                                            <span class="text-slate-400">Preset LUT ที่แนะนำ:</span>
+                                            <span class="font-medium text-emerald-700" x-text="scene.recommendedLUT"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="flex items-center gap-2 pt-1">
+                                        <button @click="openVideoModal(scene)" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                            <span>เปิดดูฉาก / Node Data</span>
+                                        </button>
+                                        <button @click="downloadSceneAsset(scene)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-medium py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-colors" title="ดาวน์โหลดคลิป / Preset">
+                                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- VIEW 3: DAVINCI RESOLVE ASSETS & PRESETS MARKETPLACE -->
+        <template x-if="currentView === 'presets'">
+            <div class="space-y-6">
+                <!-- Page Header -->
+                <div class="border-b border-slate-200 pb-5">
+                    <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-6 h-6 text-emerald-600"></i>
+                        คลัง DaVinci Resolve Presets & LUTs
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                        ดาวน์โหลด Color Grading LUTs, Fusion Titles, Macros และไฟล์โปรเจกต์ (.drp) ปรับแต่งมาเพื่ออนิเมะโดยเฉพาะ
+                    </p>
+                </div>
+
+                <!-- Asset Type Filter Tabs -->
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto custom-scrollbar">
+                    <button @click="selectedPresetType = 'All'"
+                            :class="selectedPresetType === 'All' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-4 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all">
+                        ทั้งหมด
+                    </button>
+                    <button @click="selectedPresetType = 'LUT'"
+                            :class="selectedPresetType === 'LUT' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-4 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all">
+                        Color LUTs (.cube)
+                    </button>
+                    <button @click="selectedPresetType = 'Project'"
+                            :class="selectedPresetType === 'Project' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-4 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all">
+                        Project Files (.drp)
+                    </button>
+                    <button @click="selectedPresetType = 'Macro'"
+                            :class="selectedPresetType === 'Macro' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-4 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all">
+                        Fusion Macros / Motion
+                    </button>
+                </div>
+
+                <!-- Presets Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="preset in filteredPresets" :key="preset.id">
+                        <div class="glass-card rounded-xl p-5 border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition-all">
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span :class="preset.badgeClass" class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase" x-text="preset.type"></span>
+                                    <span class="text-xs text-slate-400 font-mono" x-text="preset.fileSize"></span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-900 text-base" x-text="preset.title"></h3>
+                                    <p class="text-xs text-slate-500 mt-1 leading-relaxed" x-text="preset.description"></p>
+                                </div>
+                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 text-xs text-slate-600 space-y-1">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">อนิเมะที่รองรับ:</span>
+                                        <span class="font-medium text-slate-800" x-text="preset.targetAnime"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">เวอร์ชัน DaVinci:</span>
+                                        <span class="font-medium text-slate-800" x-text="preset.davinciVersion"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                <div class="flex items-center gap-1 text-xs text-slate-500">
+                                    <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-slate-400"></i>
+                                    <span x-text="preset.downloads + ' ครั้ง'"></span>
+                                </div>
+                                <button @click="downloadPresetModal(preset)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                    <span>ดาวน์โหลด Preset</span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- VIEW 4: ABOUT PAGE -->
+        <template x-if="currentView === 'about'">
+            <div class="max-w-3xl mx-auto glass-card rounded-2xl p-6 sm:p-8 space-y-6 border border-slate-200">
+                <div class="border-b border-slate-200 pb-4">
+                    <h1 class="text-2xl font-bold text-slate-900">เกี่ยวกับ Kutsuto Anime Scene Archive</h1>
+                    <p class="text-sm text-slate-500 mt-1">แพลตฟอร์มรวบรวมฉากอนิเมะและพรีเซ็ตสำหรับ DaVinci Resolve</p>
+                </div>
+                
+                <div class="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    <p>
+                        <strong>Kutsuto</strong> ถูกออกแบบมาเพื่ออำนวยความสะดวกแก่นักตัดต่อวิดีโอ (AMV Editors / Video Creators) โดยรวบรวมฉากตัดอนิเมะยอดนิยมอย่างเป็นระบบ จัดหมวดหมู่อย่างละเอียดตามตอน (Episodes) และไทม์ไลน์
+                    </p>
+                    <h3 class="font-bold text-slate-800 text-base pt-2">จุดเด่นของระบบ</h3>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>โครงสร้างเน้นมินิมอล Clean Design:</strong> โทนสีสว่าง สบายตา ค้นหาง่าย</li>
+                        <li><strong>ฉากรวมครบในเรื่องเดียว:</strong> เข้าถึงโฟลเดอร์อนิเมะเพื่อดูฉากตัดย่อยทั้งหมดพร้อมข้อมูล Color Space & Frame Rate</li>
+                        <li><strong>DaVinci Resolve Ready:</strong> มีค่า Node Data, LUT, Fusion Macros และไฟล์ .drp พร้อมใช้งานทันที</li>
+                    </ul>
+                </div>
+            </div>
+        </template>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mt-12 border-t border-slate-200 bg-white py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>© 2026 Kutsuto - Anime Scene Compendium & DaVinci Resolve Asset Distribution.</div>
+            <div class="flex gap-4">
+                <a href="#" class="hover:text-slate-600">เงื่อนไขการใช้งาน</a>
+                <a href="#" class="hover:text-slate-600">ส่งฉากอนิเมะเข้าระบบ</a>
+                <a href="#" class="hover:text-slate-600">ติดต่อเรา</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: VIDEO SCENE PLAYER & DAVINCI NODE INSPECTOR -->
+    <div x-show="activeVideoModal" 
+         x-transition.opacity
+         class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" 
+         style="display: none;">
+        <div class="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]" @click.outside="activeVideoModal = null">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div>
+                    <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded" x-text="activeVideoModal?.category"></span>
+                    <h3 class="font-bold text-slate-900 text-base mt-0.5" x-text="activeVideoModal?.title"></h3>
+                </div>
+                <button @click="activeVideoModal = null" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-4 sm:p-6 overflow-y-auto space-y-5 custom-scrollbar">
+                <!-- Mock Video Player Viewport -->
+                <div class="aspect-video bg-black rounded-xl overflow-hidden relative group flex items-center justify-center border border-slate-800">
+                    <img :src="activeVideoModal?.thumbnail" class="w-full h-full object-cover opacity-80">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <button @click="togglePlayState()" class="w-14 h-14 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-xl hover:scale-105 transition-transform">
+                            <i :data-lucide="isPlaying ? 'pause' : 'play'" class="w-6 h-6 fill-slate-900"></i>
+                        </button>
+                    </div>
+                    <div class="absolute bottom-3 left-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center justify-between text-xs text-white">
+                        <span x-text="isPlaying ? 'กำลังเล่นตัวอย่างคลิป...' : 'กดเพื่อเล่นตัวอย่าง'"></span>
+                        <span class="font-mono" x-text="activeVideoModal?.timestamp"></span>
+                    </div>
+                </div>
+
+                <!-- DaVinci Cut Specs & Timeline Info -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">เฟรมเรต</span>
+                        <span class="font-bold text-slate-800 text-sm" x-text="activeVideoModal?.fps + ' FPS'"></span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Color Space</span>
+                        <span class="font-bold text-slate-800 text-sm" x-text="activeVideoModal?.colorSpace"></span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">ตอนที่</span>
+                        <span class="font-bold text-slate-800 text-sm" x-text="'Episode ' + activeVideoModal?.episode"></span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">ความละเอียด</span>
+                        <span class="font-bold text-slate-800 text-sm">1080p / 4K Clips</span>
+                    </div>
+                </div>
+
+                <!-- DaVinci Resolve Node Copy Box -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i data-lucide="code" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            DaVinci Resolve Node Graph / Cut Point Clipboard
+                        </label>
+                        <button @click="copyNodeData()" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span x-text="copiedNotice ? 'คัดลอกแล้ว!' : 'คัดลอก Node Data'"></span>
+                        </button>
+                    </div>
+                    <textarea readonly class="w-full bg-slate-900 text-emerald-400 font-mono text-xs p-3 rounded-xl h-24 focus:outline-none resize-none" x-text="activeVideoModal?.nodeData"></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3">
+                <button @click="activeVideoModal = null" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
+                    ปิด
+                </button>
+                <button @click="downloadSceneAsset(activeVideoModal)" class="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>ดาวน์โหลดฉากนี้ + Preset</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ASSET DOWNLOAD PROMPT -->
+    <div x-show="activePresetModal" 
+         x-transition.opacity
+         class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" 
+         style="display: none;">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200" @click.outside="activePresetModal = null">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto">
+                    <i data-lucide="download-cloud" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg" x-text="activePresetModal?.title"></h3>
+                <p class="text-xs text-slate-500" x-text="activePresetModal?.description"></p>
+            </div>
+
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                <div class="flex justify-between text-slate-600">
+                    <span>ชนิดไฟล์:</span>
+                    <span class="font-mono font-bold text-slate-800" x-text="activePresetModal?.type"></span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>ขนาดไฟล์:</span>
+                    <span class="font-mono text-slate-800" x-text="activePresetModal?.fileSize"></span>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button @click="activePresetModal = null" class="flex-1 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">
+                    ยกเลิก
+                </button>
+                <button @click="triggerDownloadPreset()" class="flex-1 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm">
+                    เริ่มดาวน์โหลด
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toastMessage" 
+         x-transition
+         class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2"
+         style="display: none;">
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+        <span x-text="toastMessage"></span>
+    </div>
+
+    <!-- Alpine App State Logic -->
+    <script>
+        function appData() {
+            return {
+                currentView: 'home', // 'home', 'presets', 'about'
+                selectedAnime: null,
+                searchQuery: '',
+                sceneSearchQuery: '',
+                selectedCategory: 'All',
+                selectedEpisodeFilter: 'All',
+                selectedPresetType: 'All',
+                
+                activeVideoModal: null,
+                activePresetModal: null,
+                isPlaying: false,
+                copiedNotice: false,
+                toastMessage: '',
+
+                categories: ['Action', 'Emotional', 'Comedy', 'Fantasy', 'Sci-Fi'],
+
+                // Anime Catalog (Database with Scene Compendiums)
+                animeList: [
+                    {
+                        id: 'cote-s4',
+                        title: 'Classroom of the Elite (ขอต้อนรับสู่ห้องเรียนนิยมยอดคน)',
+                        year: '2024',
+                        episodesCount: 13,
+                        studio: 'Lerche',
+                        category: 'Action',
+                        coverImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80',
+                        description: 'รวบรวมทุกฉากการเฉือนคม การวางแผนเชิงกลยุทธ์ และฉากต่อสู้จิตวิทยาของ อายาโนะโคจิ คิโยทากะ ในโรงเรียนมัธยมปลายโคโด อิคุเซ',
+                        tags: ['Psychological', 'School', 'Mind Games'],
+                        scenes: [
+                            {
+                                id: 101,
+                                episode: 1,
+                                timestamp: '04:15 - 05:30',
+                                title: 'อายาโนะโคจิ วิเคราะห์ห้อง F และกลยุทธ์คะแนน',
+                                category: 'Mind Games',
+                                thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
+                                description: 'ฉากวิเคราะห์บรรยากาศในห้องเรียนและการเริ่มวางแผนเก็บแต้ม',
+                                fps: 23.976,
+                                colorSpace: 'Rec.709 (Clean)',
+                                recommendedLUT: 'COTE_Cool_Tone.cube',
+                                nodeData: 'DaVinci Resolve Node 01: Saturation 48%, Contrast +12, Midtone Detail +5'
+                            },
+                            {
+                                id: 102,
+                                episode: 1,
+                                timestamp: '18:20 - 20:10',
+                                title: 'การเจรจาลับหลังห้องเรียนกับโฮริคิตะ',
+                                category: 'Emotional',
+                                thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
+                                description: 'ฉากพูดคุยเงียบๆ ริมระเบียงพร้อมแสงอาทิตย์อัสดงยามเย็น',
+                                fps: 23.976,
+                                colorSpace: 'Rec.709',
+                                recommendedLUT: 'Sunset_Warm_Pastel.cube',
+                                nodeData: 'DaVinci Resolve Node 02: Warm Lift, Soft Highlight Roll-off'
+                            },
+                            {
+                                id: 103,
+                                episode: 3,
+                                timestamp: '12:00 - 14:45',
+                                title: 'ฉากการเผชิญหน้าระหว่างสายตา (Stare Down)',
+                                category: 'Action',
+                                thumbnail: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80',
+                                description: 'การเผชิญหน้าดึงอารมณ์ตึงเครียด โทนสีคอนทราสต์สูง',
+                                fps: 24,
+                                colorSpace: 'S-Log3 Emulation',
+                                recommendedLUT: 'Noir_Intense.cube',
+                                nodeData: 'DaVinci Resolve Node 03: High Contrast Curve, Cold Shadows'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'rezero-s3',
+                        title: 'Re:ZERO - Starting Life in Another World',
+                        year: '2024',
+                        episodesCount: 16,
+                        studio: 'White Fox',
+                        category: 'Fantasy',
+                        coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+                        description: 'คลังฉากการหวนคืนด้วยความตาย และฉากต่อสู้ในเมืองลายสลักไพริน',
+                        tags: ['Isekai', 'Dark Fantasy', 'Drama'],
+                        scenes: [
+                            {
+                                id: 201,
+                                episode: 1,
+                                timestamp: '02:10 - 04:30',
+                                title: 'สึบารุ เดินทางเข้าสู่เมืองลายสลักไพริน',
+                                category: 'Fantasy',
+                                thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+                                description: 'ฉากเปิดเมืองทิวทัศน์สวยงาม โทนสีสดใสสมจริง',
+                                fps: 23.976,
+                                colorSpace: 'Rec.709',
+                                recommendedLUT: 'Anime_Vibrant_World.cube',
+                                nodeData: 'DaVinci Resolve Node 01: Saturation 55%, Lift +0.02'
+                            },
+                            {
+                                id: 202,
+                                episode: 2,
+                                timestamp: '15:10 - 18:00',
+                                title: 'การต่อสู้กับมหาบาปบนหอคอย',
+                                category: 'Action',
+                                thumbnail: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
+                                description: 'ฉากเอ็ฟเฟกต์เวทมนตร์อลังการ เฟรมเรตลื่นไหล',
+                                fps: 60,
+                                colorSpace: 'Rec.709',
+                                recommendedLUT: 'Magic_Glow_VFX.cube',
+                                nodeData: 'DaVinci Resolve Node 02: Glow Macro + Soft Blur'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'jjk-s2',
+                        title: 'Jujutsu Kaisen (มหาเวทย์ผนึกมาร)',
+                        year: '2023',
+                        episodesCount: 23,
+                        studio: 'MAPPA',
+                        category: 'Action',
+                        coverImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80',
+                        description: 'ศูนย์รวมฉากต่อสู้อุบัติการณ์ชิบุยะ การวาดเฟรมอนิเมชันระดับเทพ',
+                        tags: ['Supernatural', 'Battle', 'MAPPA'],
+                        scenes: [
+                            {
+                                id: 301,
+                                episode: 9,
+                                timestamp: '10:00 - 12:30',
+                                title: 'โกโจ ซาโตรุ ขยายอาณาจักรไร้เขตเขตต์',
+                                category: 'Action',
+                                thumbnail: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80',
+                                description: 'ฉากเอ็ฟเฟกต์ไทม์สเกล 0.2 วินาทีในสถานีรถไฟใต้ดิน',
+                                fps: 23.976,
+                                colorSpace: 'Rec.709',
+                                recommendedLUT: 'Shibuya_Dark_Blue.cube',
+                                nodeData: 'DaVinci Resolve Node 01: Cyan tint shadows, Vignette 0.4'
+                            }
+                        ]
+                    }
+                ],
+
+                // DaVinci Resolve Presets Database
+                presets: [
+                    {
+                        id: 'p1',
+                        title: 'Anime Soft Clean Look LUT',
+                        type: 'LUT',
+                        badgeClass: 'bg-emerald-100 text-emerald-800',
+                        fileSize: '1.2 MB',
+                        targetAnime: 'ทุกเรื่อง (Universal)',
+                        davinciVersion: '17, 18, 19+',
+                        description: 'เพิ่มความนุ่มนวลให้ผิวตัวละครอนิเมะ พร้อมปรับแต่งไฮไลต์ไม่ให้พร่ามัว',
+                        downloads: 1420
+                    },
+                    {
+                        id: 'p2',
+                        title: 'COTE Cinematic Cold Shadow .drp',
+                        type: 'Project',
+                        badgeClass: 'bg-blue-100 text-blue-800',
+                        fileSize: '45.8 MB',
+                        targetAnime: 'Classroom of the Elite',
+                        davinciVersion: '18.6+',
+                        description: 'ไฟล์โปรเจกต์พร้อมการตั้งค่าไทม์ไลน์ 23.976fps และระบบคัตติ้งระดับมืออาชีพ',
+                        downloads: 890
+                    },
+                    {
+                        id: 'p3',
+                        title: 'Impact Flash & Shake Fusion Macro',
+                        type: 'Macro',
+                        badgeClass: 'bg-purple-100 text-purple-800',
+                        fileSize: '340 KB',
+                        targetAnime: 'Action Anime',
+                        davinciVersion: '18+',
+                        description: 'พรีเซ็ตสั่นหน้าจอและแฟลชกระแทกสำหรับฉากต่อสู้ใน Fusion Page',
+                        downloads: 2300
+                    }
+                ],
+
+                // Getters & Filtered Lists
+                get filteredAnimeList() {
+                    return this.animeList.filter(anime => {
+                        const matchesCategory = this.selectedCategory === 'All' || anime.category === this.selectedCategory;
+                        const matchesSearch = anime.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                              anime.tags.some(t => t.toLowerCase().includes(this.searchQuery.toLowerCase()));
+                        return matchesCategory && matchesSearch;
+                    });
+                },
+
+                get filteredAnimeScenes() {
+                    if (!this.selectedAnime) return [];
+                    return this.selectedAnime.scenes.filter(scene => {
+                        const matchesEp = this.selectedEpisodeFilter === 'All' || scene.episode == this.selectedEpisodeFilter;
+                        const matchesSearch = scene.title.toLowerCase().includes(this.sceneSearchQuery.toLowerCase()) ||
+                                              scene.category.toLowerCase().includes(this.sceneSearchQuery.toLowerCase());
+                        return matchesEp && matchesSearch;
+                    });
+                },
+
+                get filteredPresets() {
+                    return this.presets.filter(preset => {
+                        return this.selectedPresetType === 'All' || preset.type === this.selectedPresetType;
+                    });
+                },
+
+                // Helper Methods
+                getEpisodesList(anime) {
+                    if (!anime) return [];
+                    const eps = anime.scenes.map(s => s.episode);
+                    return [...new Set(eps)].sort((a,b) => a - b);
+                },
+
+                openAnimeDetail(anime) {
+                    this.selectedAnime = anime;
+                    this.selectedEpisodeFilter = 'All';
+                    this.sceneSearchQuery = '';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                openVideoModal(scene) {
+                    this.activeVideoModal = scene;
+                    this.isPlaying = false;
+                    this.copiedNotice = false;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                togglePlayState() {
+                    this.isPlaying = !this.isPlaying;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                copyNodeData() {
+                    if (!this.activeVideoModal) return;
+                    navigator.clipboard.writeText(this.activeVideoModal.nodeData || '');
+                    this.copiedNotice = true;
+                    this.showToast('คัดลอก DaVinci Node Data เรียบร้อยแล้ว!');
+                    setTimeout(() => { this.copiedNotice = false; }, 3000);
+                },
+
+                downloadSceneAsset(scene) {
+                    this.showToast(`กำลังเตรียมดาวน์โหลดไฟล์ฉาก: ${scene.title}`);
+                },
+
+                downloadPresetModal(preset) {
+                    this.activePresetModal = preset;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                triggerDownloadPreset() {
+                    this.showToast(`เริ่มดาวน์โหลด ${this.activePresetModal.title}`);
+                    this.activePresetModal = null;
+                },
+
+                showToast(msg) {
+                    this.toastMessage = msg;
+                    setTimeout(() => { this.toastMessage = ''; }, 3500);
+                }
+            }
+        }
+
+        // Initialize Lucide Icons on load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
